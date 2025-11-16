@@ -12,40 +12,51 @@ import java.nio.file.Path;
 public class ServidorItensCardapioSocket {
     public static void main(String[] args) throws IOException {
 
-       try(ServerSocket serverSocket = new ServerSocket(8000)){
-           System.out.println("Subiu o Servidor!");
+        try (ServerSocket serverSocket = new ServerSocket(8000)) {
+            System.out.println("Subiu o Servidor!");
 
-           while (true){
-               try(Socket clientSocket = serverSocket.accept()){
-                   InputStream clientIS = clientSocket.getInputStream();
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                Thread thread = new Thread(() -> trataRequisicao(clientSocket));
+                thread.start();
+            }
+        }
+    }
 
-                   StringBuilder requestBuilder = new StringBuilder();
+    //Criado o metodo para organizar o codigo
+    private static void trataRequisicao(Socket clientSocket) {
+        try (clientSocket) {
+            InputStream clientIS = clientSocket.getInputStream();
 
+            StringBuilder requestBuilder = new StringBuilder();
+            int data;
+            do {
+                data = clientIS.read();
+                requestBuilder.append((char) data);
+            } while (clientIS.available() > 0);
 
-                   int data;
-                   do {
-                       data = clientIS.read();
-                       requestBuilder.append((char)data);
-                   } while (clientIS.available() > 0);
+            String request = requestBuilder.toString();
+            System.out.println(request);
 
-                   String request = requestBuilder.toString();
-                   System.out.println(request);
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-                   Path path = Path.of("itensCardapio.json");
-                   String json = Files.readString(path);
+            Path path = Path.of("itensCardapio.json");
+            String json = Files.readString(path);
 
-                   OutputStream clientOS = clientSocket.getOutputStream();
-                   PrintStream clientOut = new PrintStream(clientOS);
+            OutputStream clientOS = clientSocket.getOutputStream();
+            PrintStream clientOut = new PrintStream(clientOS);
 
-                   clientOut.println("HTTP/1.1 200 OK");
-                   clientOut.println("Content-type: application/json; charser=UTF-8");
-                   clientOut.println();
+            clientOut.println("HTTP/1.1 200 OK");
+            clientOut.println("Content-type: application/json; charser=UTF-8");
+            clientOut.println();
 
-                   clientOut.println(json);
-               }
-           }
-
-       }
-
+            clientOut.println(json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
