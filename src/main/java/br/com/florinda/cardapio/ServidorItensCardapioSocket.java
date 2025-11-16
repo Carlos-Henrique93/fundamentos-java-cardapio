@@ -8,17 +8,21 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ServidorItensCardapioSocket {
     public static void main(String[] args) throws IOException {
 
-        try (ServerSocket serverSocket = new ServerSocket(8000)) {
-            System.out.println("Subiu o Servidor!");
+        try (ExecutorService executorService = Executors.newFixedThreadPool(50)) {
 
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                Thread thread = new Thread(() -> trataRequisicao(clientSocket));
-                thread.start();
+            try (ServerSocket serverSocket = new ServerSocket(8000)) {
+                System.out.println("Subiu o Servidor!");
+
+                while (true) {
+                    Socket clientSocket = serverSocket.accept();
+                    executorService.execute(() -> trataRequisicao(clientSocket));
+                }
             }
         }
     }
